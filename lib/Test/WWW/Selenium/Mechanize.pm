@@ -18,6 +18,7 @@ sub run {
     if (ref $test) {
         
     } else {
+        print "Reading $test\n";
         $test = Parse::Selenese::parse($test);
     }
     # dump $test;
@@ -56,11 +57,23 @@ sub open {
 sub clickAndWait {
     my ($self, $tc, $values, $instr) = @_;
     if ($values->[1] =~ /^link=(.*)/) {
-        return '$mech->follow_link_ok({ text => '._esc_in_q($1).'}, '.$instr.')'
+        return '$mech->follow_link_ok({ text => '._esc_in_q($1).'}, '.$instr.');'."\n";
     }
     else {
         return '$tb->todo_skip('.$instr.');'."\n";        
     }
+}
+
+sub verifyTextPresent {
+    my ($self, $tc, $values, $instr) = @_;
+    my $val = $values->[1]; # Do some charset magic
+    return '$mech->text_contains('._esc_in_q($val).', '.$instr.');'."\n";
+}
+
+sub comment {
+    my ($self, $tc, $values, $instr) = @_;
+    return '$tb->diag('.$instr.');'."\n";
+    
 }
 
 =head2 _esc_in_q

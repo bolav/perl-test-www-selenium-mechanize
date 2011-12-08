@@ -1,0 +1,11 @@
+#!/usr/bin/perl
+
+use strict;
+use Test::More;
+
+use Test::WWW::Selenium::Mechanize;
+
+my $twsm = Test::WWW::Selenium::Mechanize->new;
+
+$twsm->run($ARGV[0]);
+done_testing();
