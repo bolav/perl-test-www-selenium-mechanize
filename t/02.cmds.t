@@ -15,4 +15,10 @@ my $tc = Parse::Selenese::TestCase->new(base_url => 'http://www.startsiden.no');
     my $cmd = Parse::Selenese::Command->new(values => ['unknown_cmd', '/']);
     is($twsm->convert_command($cmd, $tc), '$tb->todo_skip(\'unknown_cmd /\');'."\n");    
 }
+
+{
+    my $cmd = Parse::Selenese::Command->new(values => ['assertElementPresent', 'id=footer']);
+    is($twsm->convert_command($cmd, $tc), 'ok($tree->look_down("id" => \'footer\'), \'assertElementPresent id=footer\');'."\n");    
+}
+
 done_testing();
