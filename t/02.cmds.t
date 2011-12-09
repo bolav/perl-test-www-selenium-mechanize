@@ -26,5 +26,10 @@ my $tc = Parse::Selenese::TestCase->new(base_url => 'http://www.startsiden.no');
     is($twsm->convert_command($cmd, $tc), 'ok(!$xpath->findnodes(\'//div[@id=fp_cont]\')->size, \'assertElementNotPresent //div[@id=fp_cont]\')'."\n");
 }
 
+{
+    my $cmd = Parse::Selenese::Command->new(values => ['assertText', '//div', 'Arne']);
+    is($twsm->convert_command($cmd, $tc), 'is(html_strip($xpath->findnodes_as_string(\'//div\')), \'Arne\', \'assertText //div Arne\');'."\n");
+}
+
 
 done_testing();

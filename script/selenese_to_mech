@@ -1,0 +1,9 @@
+#!/usr/bin/perl
+
+use strict;
+
+use Test::WWW::Selenium::Mechanize;
+
+my $twsm = Test::WWW::Selenium::Mechanize->new;
+
+print $twsm->as_perl($ARGV[0]);

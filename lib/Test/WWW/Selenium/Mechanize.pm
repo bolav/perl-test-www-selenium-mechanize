@@ -23,6 +23,17 @@ has 'wantxpath' => (is => 'rw', isa => 'Bool', default => 0);
 
 has 'skiptest'  => (is => 'rw', isa => 'Bool', default => 0);
 
+sub get_test {
+    my ($self, $test) = @_;
+    
+    if (ref $test) {
+        
+    } else {
+        $test = Parse::Selenese::parse($test);
+    }
+    return $test;
+}
+
 sub run {
     my ($self, $test) = @_;
     my $tb = $self->testbuilder;
@@ -30,17 +41,15 @@ sub run {
     my $tree;
     my $xpath;
 
-    if (ref $test) {
-        
-    } else {
-        $test = Parse::Selenese::parse($test);
-    }
-    # dump $test;
+    $test = $self->get_test($test);
+
     if (ref $test eq 'Parse::Selenese::TestCase') {
         foreach my $command (@{$test->commands}) {
             my ($cmd, $args) = $self->convert_command($command, $test);
             if ($self->changed) {
                 $self->changed(0);
+                $self->wanttree(0);
+                $self->wantxpath(0);
                 $tree && $tree->delete;
                 $tree = undef;
                 $xpath && $xpath->delete;
@@ -48,9 +57,11 @@ sub run {
             }
             if ($self->wanttree && !$tree) {
                 $tree = HTML::TreeBuilder->new_from_content($mech->content);
+                $self->wanttree(0);
             }
             if ($self->wantxpath && !$xpath) {
                 $xpath = HTML::TreeBuilder::XPath->new_from_content($mech->content);
+                $self->wantxpath(0);
             }
             if ($self->skiptest) {
                 $cmd = '$tb->diag("Skipping javascript test");'."\n";
@@ -64,6 +75,62 @@ sub run {
         $tree && $tree->delete;
         $xpath && $xpath->delete;
     }
+}
+
+sub as_perl {
+    my ($self, $test) = @_;
+    my $tree;
+    my $xpath;
+    $test = $self->get_test($test);
+    my $perl = <<'PERL';
+use Test::More;
+use Test::WWW::Mechanize;
+use utf8;
+
+use HTML::Strip;
+use HTML::TreeBuilder;
+use HTML::TreeBuilder::XPath;
+use HTML::Selector::XPath;
+
+my $tree;
+my $xpath;
+my $tb = Test::More->builder;
+PERL
+    foreach my $command (@{$test->commands}) {
+        my ($cmd, $args) = $self->convert_command($command, $test);
+        if ($self->changed) {
+            $self->changed(0);
+            $self->wanttree(0);
+            $self->wantxpath(0);
+            $tree = 0;
+            $xpath = 0;
+            $perl .= <<'PERL';
+  $tree && $tree->delete;
+  $tree = undef;
+  $xpath && $xpath->delete;
+  $xpath = undef;
+PERL
+        }
+        if ($self->wanttree && !$tree) {
+            $tree = 1;
+            $perl .= '  $tree = HTML::TreeBuilder->new_from_content($mech->content);'."\n";
+            $self->wanttree(0);
+        }
+        if ($self->wantxpath && !$xpath) {
+            $xpath = 1;
+            $perl .= '  $xpath = HTML::TreeBuilder::XPath->new_from_content($mech->content);'."\n";
+            $self->wantxpath(0);
+        }
+        if ($self->skiptest) {
+            $cmd = '$tb->diag("Skipping javascript test");'."\n";
+        }
+        $perl .= $cmd;
+    }
+    $perl .= <<'PERL';
+  $tree && $tree->delete;
+  $xpath && $xpath->delete;
+  done_testing;
+PERL
 }
 
 sub convert_command {
@@ -90,6 +157,11 @@ sub open {
     return '$mech->get_ok(\''.$url.$values->[1].'\', '.$instr.');'."\n";
 }
 
+sub type {
+    my ($self, $tc, $values, $instr) = @_;
+    return '$mech->field('._esc_in_q($values->[1]).', '._esc_in_q($values->[2]).');'."\n";
+}
+
 sub clickAndWait {
     my ($self, $tc, $values, $instr) = @_;
     if ($values->[1] =~ /^link=(.*)/) {
@@ -110,14 +182,13 @@ sub assertTextPresent {
 
 sub assertText {
     my ($self, $tc, $values, $instr) = @_;
-    if (0) {
-        
+    my $locator = $self->locator_to_perl($values->[1],1);
+
+    if ($locator) {
+        return 'is('.$locator.', '._esc_in_q($values->[2]).', '.$instr.');'."\n";
     }
-    elsif ($values->[1] =~ m{^//}) {
-        $self->wantxpath(1);
         # TODO: Filter out HTML
-        return 'is(html_strip($xpath->findnodes_as_string('._esc_in_q($values->[1]).')), '._esc_in_q($values->[2]).', '.$instr.')'."\n";
-    }
+        # html_strip($xpath->findnodes_as_string('._esc_in_q($values->[1]).'))
     return '$tb->todo_skip('.$instr.');'."\n";
 }
 
@@ -142,26 +213,6 @@ sub waitForTitle {
 sub assertElementPresent {
     my ($self, $tc, $values, $instr) = @_;
     return 'ok('.$self->locator_to_perl($values->[1]).', '.$instr.');'."\n";
-    if ($values->[1] =~ /^id=(.*)/) {
-        my $val = $1;
-        $self->wanttree(1);
-        return 'ok($tree->look_down("id" => '._esc_in_q($val).'), '.$instr.');'."\n";
-    }
-    elsif ($values->[1] =~ /^link=(.*)/) {
-        return 'ok($mech->find_link( text => '._esc_in_q($1).'), '.$instr.');'."\n";
-    }
-    elsif ($values->[1] =~ /^class=(.*)/) {
-        my $val = $1;
-        $self->wanttree(1);
-        return 'ok($tree->look_down("class" => '._esc_in_q($val).'), '.$instr.');'."\n";
-    }
-    elsif ($values->[1] =~ m{^//}) {
-        $self->wantxpath(1);
-        return 'ok($xpath->findnodes('._esc_in_q($values->[1]).')->size, '.$instr.')'."\n";
-    }
-    else {
-        return '$tb->todo_skip('.$instr.');'."\n";
-    }
 }
 
 sub assertElementNotPresent {
@@ -203,6 +254,20 @@ sub locator_to_perl {
         elsif ($locator =~ m{^//}) {
             $self->wantxpath(1);
             return '$xpath->findnodes('._esc_in_q($locator).')->size';
+        }
+    }
+    else {
+        # Want to compare against a value
+        if (0) {
+            
+        }
+        elsif ($locator =~ /^css=(.*)/) {
+            my $xp = HTML::Selector::XPath::selector_to_xpath($1);
+            $self->wantxpath(1);
+            return 'html_strip($xpath->findnodes_as_string('._esc_in_q($xp).'))';
+        }
+        elsif ($locator =~ m{^//}) {
+            return 'html_strip($xpath->findnodes_as_string('._esc_in_q($locator).'))';
         }
     }
 }
