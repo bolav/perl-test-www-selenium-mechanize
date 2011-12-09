@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head profile="http://selenium-ide.openqa.org/profiles/test-case">
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-<link rel="selenium.base" href="http://rittranking.merida.no/" />
+<link rel="selenium.base" href="http://local.test.script/" />
 <title>Testing</title>
 </head>
 <body>
@@ -17,21 +17,36 @@
 	<td></td>
 </tr>
 <tr>
-	<td>clickAndWait</td>
-	<td>id=logo</td>
+	<td>assertElementNotPresent</td>
+	<td>//div[@id=fp_cont]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>assertElementNotPresent</td>
+	<td>//div</td>
+	<td>Not there</td>
+</tr>
+<tr>
+	<td>assertElementPresent</td>
+	<td>//div[1]</td>
+	<td>Some text</td>
+</tr>
+<tr>
+	<td>assertElementPresent</td>
+	<td>class=myclass</td>
 	<td></td>
 </tr>
 <tr>
 	<td>clickAndWait</td>
-	<td>link=Hortensmarka Rundt</td>
+	<td>link=Link1</td>
 	<td></td>
 </tr>
+<!--no_mech-->
 <tr>
-	<td>clickAndWait</td>
-	<td>link=Resultat</td>
+	<td>assertElementPresent</td>
+	<td>class=javascript_generated_class</td>
 	<td></td>
 </tr>
-
 </tbody></table>
 </body>
 </html>
