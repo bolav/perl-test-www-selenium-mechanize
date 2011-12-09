@@ -250,17 +250,7 @@ sub assertElementPresent {
 
 sub assertElementNotPresent {
     my ($self, $tc, $values, $instr) = @_;
-    if (0) {
-        
-    }
-    elsif (($values->[1] =~ m{^//}) && ($values->[2])) {
-        $self->wantxpath(1);
-        return 'isnt($xpath->findnodes_as_string('._esc_in_q($values->[1]).'), '._esc_in_q($values->[2]).','.$instr.')'."\n";
-    }
-    elsif ($values->[1] =~ m{^//}) {
-        $self->wantxpath(1);
-        return 'ok(!$xpath->findnodes('._esc_in_q($values->[1]).')->size, '.$instr.')'."\n";
-    }
+    return 'ok(!'.$self->locator_to_perl($values->[1]).', '.$instr.')'."\n";
 }
 
 sub locator_to_perl {
@@ -287,6 +277,10 @@ sub locator_to_perl {
         elsif ($locator =~ m{^//}) {
             $self->wantxpath(1);
             return '$xpath->findnodes('._esc_in_q($locator).')->size';
+        }
+        else {
+            $self->wanttree(1);
+            return '$tree->look_down("id" => '._esc_in_q($locator).')';
         }
     }
     else {

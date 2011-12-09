@@ -28,7 +28,7 @@ my $tc = Parse::Selenese::TestCase->new(base_url => 'http://www.startsiden.no');
 
 {
     my $cmd = Parse::Selenese::Command->new(values => ['assertText', '//div', 'Arne']);
-    is($twsm->convert_command($cmd, $tc), 'is(html_strip($xpath->findnodes_as_string(\'//div\')), \'Arne\', \'assertText //div Arne\');'."\n");
+    is($twsm->convert_command($cmd, $tc), 'is($xpath->findnodes(\'//div\')->[0]->as_text, \'Arne\', \'assertText //div Arne\');'."\n");
 }
 
 

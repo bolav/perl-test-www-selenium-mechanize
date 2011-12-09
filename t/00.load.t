@@ -1,5 +1,5 @@
 use strict;
-use Test::More tests => 4;
+use Test::More tests => 2;
 
 use ok 'Test::WWW::Selenium::Mechanize';
 
