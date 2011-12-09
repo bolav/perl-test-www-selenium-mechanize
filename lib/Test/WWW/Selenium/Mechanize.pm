@@ -318,6 +318,10 @@ sub _esc_in_q {
     return "'".$str."'";
 }
 
+
+# TODO: Move this to Mechanize::Helper, and export by default
+# Needs to be done for perl-conversion to work
+
 sub html_strip {
     my ($str) = @_;
     my $hs = HTML::Strip->new();
@@ -327,6 +331,9 @@ sub html_strip {
     $clean_text =~ s/^\s//;
     return $clean_text;
 }
+
+# If we need more like this, could be refactored into find_parent, and then
+# use find_typenumber
 
 sub find_formnumber {
     my ($node) = @_;
@@ -344,6 +351,8 @@ sub find_formnumber {
     }
     warn "Button not in a form";
 }
+
+# parent should use root if not set
 
 sub find_typenumber {
     my ($node, $search, $parent) = @_;
