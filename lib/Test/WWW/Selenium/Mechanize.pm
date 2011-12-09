@@ -13,6 +13,9 @@ use HTML::Selector::XPath;
 
 use Data::Dump qw/dump/;
 
+# http://use.perl.org/~miyagawa/journal/31204
+# http://search.cpan.org/perldoc?WWW%3A%3AMechanize%3A%3ATreeBuilder
+
 has 'testbuilder' => (is => 'ro', default => sub { Test::More->builder; });
 has 'mech'        => (is => 'ro', default => sub { Test::WWW::Mechanize->new(); });
 
@@ -46,15 +49,6 @@ sub run {
     if (ref $test eq 'Parse::Selenese::TestCase') {
         foreach my $command (@{$test->commands}) {
             my ($cmd, $args) = $self->convert_command($command, $test);
-            if ($self->changed) {
-                $self->changed(0);
-                $self->wanttree(0);
-                $self->wantxpath(0);
-                $tree && $tree->delete;
-                $tree = undef;
-                $xpath && $xpath->delete;
-                $xpath = undef;
-            }
             if ($self->wanttree && !$tree) {
                 $tree = HTML::TreeBuilder->new_from_content($mech->content);
                 $self->wanttree(0);
@@ -70,6 +64,15 @@ sub run {
             eval $cmd;
             if ($@) {
                 die $@.' '.join(' ', @{$command->values})."\n".$cmd;
+            }
+            if ($self->changed) {
+                $self->changed(0);
+                $self->wanttree(0);
+                $self->wantxpath(0);
+                $tree && $tree->delete;
+                $tree = undef;
+                $xpath && $xpath->delete;
+                $xpath = undef;
             }
         }
         $tree && $tree->delete;
@@ -98,19 +101,6 @@ my $tb = Test::More->builder;
 PERL
     foreach my $command (@{$test->commands}) {
         my ($cmd, $args) = $self->convert_command($command, $test);
-        if ($self->changed) {
-            $self->changed(0);
-            $self->wanttree(0);
-            $self->wantxpath(0);
-            $tree = 0;
-            $xpath = 0;
-            $perl .= <<'PERL';
-  $tree && $tree->delete;
-  $tree = undef;
-  $xpath && $xpath->delete;
-  $xpath = undef;
-PERL
-        }
         if ($self->wanttree && !$tree) {
             $tree = 1;
             $perl .= '  $tree = HTML::TreeBuilder->new_from_content($mech->content);'."\n";
@@ -125,6 +115,19 @@ PERL
             $cmd = '$tb->diag("Skipping javascript test");'."\n";
         }
         $perl .= $cmd;
+        if ($self->changed) {
+            $self->changed(0);
+            $self->wanttree(0);
+            $self->wantxpath(0);
+            $tree = 0;
+            $xpath = 0;
+            $perl .= <<'PERL';
+  $tree && $tree->delete;
+  $tree = undef;
+  $xpath && $xpath->delete;
+  $xpath = undef;
+PERL
+        }
     }
     $perl .= <<'PERL';
   $tree && $tree->delete;
@@ -167,6 +170,36 @@ sub clickAndWait {
     if ($values->[1] =~ /^link=(.*)/) {
         $self->changed(1);
         return '$mech->follow_link_ok({ text => '._esc_in_q($1).'}, '.$instr.');'."\n";
+    }
+    elsif ($values->[1] =~ /^css=(.*)/) {
+        my $xp = HTML::Selector::XPath::selector_to_xpath($1);
+        $self->wantxpath(1);
+        return '{
+  my $node = $xpath->findnodes('._esc_in_q($xp).')->[0];
+  if ($node->attr(\'type\') eq \'submit\') {
+      $mech->form_number(find_formnumber($node));
+      my $req = $mech->current_form->find_input( undef, \'submit\', find_typenumber($node, {type => \'submit\'}, \'form\') )->click($mech->current_form);
+      $mech->request($req);
+      ok($mech->success, '.$instr.');
+  }
+  else {
+      $tb->todo_skip('.$instr.');
+  }
+}
+';
+    }
+    elsif ($values->[1] =~ m{^//}) {
+        return '{
+  my $node = $xpath->findnodes('._esc_in_q($values->[1]).')->[0];
+  if ($node->tag eq \'a\') {
+      $mech->get_ok($node->attr(\'href\'));
+  }
+  else {
+      $tb->todo_skip('.$instr.');
+  }
+}
+';
+
     }
     else {
         return '$tb->todo_skip('.$instr.');'."\n";        
@@ -264,10 +297,10 @@ sub locator_to_perl {
         elsif ($locator =~ /^css=(.*)/) {
             my $xp = HTML::Selector::XPath::selector_to_xpath($1);
             $self->wantxpath(1);
-            return 'html_strip($xpath->findnodes_as_string('._esc_in_q($xp).'))';
+            return '$xpath->findnodes('._esc_in_q($xp).')->[0]->as_text';
         }
         elsif ($locator =~ m{^//}) {
-            return 'html_strip($xpath->findnodes_as_string('._esc_in_q($locator).'))';
+            return '$xpath->findnodes('._esc_in_q($locator).')->[0]->as_text';
         }
     }
 }
@@ -294,5 +327,40 @@ sub html_strip {
     $clean_text =~ s/^\s//;
     return $clean_text;
 }
+
+sub find_formnumber {
+    my ($node) = @_;
+    my $find = $node;
+    while ($find->tag and $find->tag ne 'form') {
+        $find = $find->parent;
+    }
+    if ($find) {
+        my @forms = $node->root->look_down('_tag' => 'form');
+        my $i = 1;
+        foreach my $form (@forms) {
+            return $i if ($find == $form);
+            $i++;
+        }
+    }
+    warn "Button not in a form";
+}
+
+sub find_typenumber {
+    my ($node, $search, $parent) = @_;
+    my $find = $node;
+    while ($find->tag and $find->tag ne $parent) {
+        $find = $find->parent;
+    }
+    if ($find) {
+        my @found = $find->look_down(%$search);
+        my $i = 1;
+        foreach my $f (@found) {
+            return $i if ($f == $node);
+            $i++;
+        }
+    }
+    warn "not found";
+}
+
 
 1;
