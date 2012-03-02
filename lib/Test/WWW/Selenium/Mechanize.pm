@@ -326,6 +326,7 @@ sub locator_to_perl {
             return '$xpath->findnodes('._esc_in_q($xp).')->[0]->as_text';
         }
         elsif ($locator =~ m{^//}) {
+            $self->wantxpath(1);
             return '$xpath->findnodes('._esc_in_q($locator).')->[0]->as_text';
         }
     }

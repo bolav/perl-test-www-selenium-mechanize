@@ -2,7 +2,8 @@
 
 use strict;
 use Test::More;
-
+use FindBin;
+use lib "$FindBin::Bin/../lib";
 use Test::WWW::Selenium::Mechanize;
 
 my $twsm = Test::WWW::Selenium::Mechanize->new;

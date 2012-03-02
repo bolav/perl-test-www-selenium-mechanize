@@ -1,7 +1,8 @@
 #!/usr/bin/perl
 
 use strict;
-
+use FindBin;
+use lib "$FindBin::Bin/../lib";
 use Test::WWW::Selenium::Mechanize;
 
 my $twsm = Test::WWW::Selenium::Mechanize->new;
