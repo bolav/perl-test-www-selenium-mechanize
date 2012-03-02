@@ -14,6 +14,7 @@ requires 'HTML::TreeBuilder::XPath';
 requires 'HTML::Selector::XPath';
 
 test_requires 'HTTP::Server::Simple::CGI';
+test_requires 'Test::MockModule';
 
 install_script glob('script/*');
 WriteAll;

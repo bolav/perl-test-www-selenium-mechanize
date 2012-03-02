@@ -11,6 +11,8 @@ use HTML::TreeBuilder;
 use HTML::TreeBuilder::XPath;
 use HTML::Selector::XPath;
 
+use Test::WWW::Selenium::Mechanize::Helper;
+
 use Data::Dump qw/dump/;
 
 # http://use.perl.org/~miyagawa/journal/31204
@@ -94,10 +96,12 @@ use HTML::Strip;
 use HTML::TreeBuilder;
 use HTML::TreeBuilder::XPath;
 use HTML::Selector::XPath;
+use Test::WWW::Selenium::Mechanize::Helper;
 
 my $tree;
 my $xpath;
 my $tb = Test::More->builder;
+my $mech = Test::WWW::Mechanize->new();
 PERL
     foreach my $command (@{$test->commands}) {
         my ($cmd, $args) = $self->convert_command($command, $test);
@@ -162,33 +166,45 @@ sub open {
 
 sub type {
     my ($self, $tc, $values, $instr) = @_;
-    return '$mech->field('._esc_in_q($values->[1]).', '._esc_in_q($values->[2]).');'."\n";
+    if ($values->[1] =~ /^id=(.*)/) {
+        my $val = $1;
+        $self->wanttree(1);
+        return '{
+  my $node = ($tree->look_down("id" => '._esc_in_q($val).'))[0];
+  $mech->form_number(find_formnumber($node));
+  $mech->field($node->attr("name"), '._esc_in_q($values->[2]).');
 }
+';
+    }
+    else {
+        # XXX: Should maybe find the first input with name=
+        return '$mech->field('._esc_in_q($values->[1]).', '._esc_in_q($values->[2]).');'."\n";
+    }
+}
+
+*click = \&clickAndWait;
 
 sub clickAndWait {
     my ($self, $tc, $values, $instr) = @_;
+    
+    my $node;
     if ($values->[1] =~ /^link=(.*)/) {
         $self->changed(1);
         return '$mech->follow_link_ok({ text => '._esc_in_q($1).'}, '.$instr.');'."\n";
     }
+    elsif ($values->[1] =~ /^id=(.*)/) {
+        my $val = $1;
+        $self->wanttree(1);
+        $node = 'my $node = ($tree->look_down("id" => '._esc_in_q($val).'))[0];';
+    }
     elsif ($values->[1] =~ /^css=(.*)/) {
         my $xp = HTML::Selector::XPath::selector_to_xpath($1);
         $self->wantxpath(1);
-        return '{
-  my $node = $xpath->findnodes('._esc_in_q($xp).')->[0];
-  if ($node->attr(\'type\') eq \'submit\') {
-      $mech->form_number(find_formnumber($node));
-      my $req = $mech->current_form->find_input( undef, \'submit\', find_typenumber($node, {type => \'submit\'}, \'form\') )->click($mech->current_form);
-      $mech->request($req);
-      ok($mech->success, '.$instr.');
-  }
-  else {
-      $tb->todo_skip('.$instr.');
-  }
-}
-';
+        $node = 'my $node = $xpath->findnodes('._esc_in_q($xp).')->[0];';
     }
     elsif ($values->[1] =~ m{^//}) {
+        $self->wantxpath(1);
+        $self->changed(1);
         return '{
   my $node = $xpath->findnodes('._esc_in_q($values->[1]).')->[0];
   if ($node->tag eq \'a\') {
@@ -200,6 +216,22 @@ sub clickAndWait {
 }
 ';
 
+    }
+    if ($node) {
+        return '{
+  '.$node.'
+  if ($node->attr(\'type\') eq \'submit\') {
+      $mech->form_number(find_formnumber($node));
+      my $req = $mech->current_form->find_input( undef, \'submit\', find_typenumber($node, {type => \'submit\'}, \'form\') )->click($mech->current_form);
+      $mech->request($req);
+      ok($mech->success, '.$instr.');
+  }
+  else {
+      $tb->todo_skip('.$instr.');
+  }
+}
+';
+        
     }
     else {
         return '$tb->todo_skip('.$instr.');'."\n";        
@@ -250,7 +282,7 @@ sub assertElementPresent {
 
 sub assertElementNotPresent {
     my ($self, $tc, $values, $instr) = @_;
-    return 'ok(!'.$self->locator_to_perl($values->[1]).', '.$instr.')'."\n";
+    return 'ok(!'.$self->locator_to_perl($values->[1]).', '.$instr.');'."\n";
 }
 
 sub locator_to_perl {
@@ -325,45 +357,5 @@ sub html_strip {
     $clean_text =~ s/^\s//;
     return $clean_text;
 }
-
-# If we need more like this, could be refactored into find_parent, and then
-# use find_typenumber
-
-sub find_formnumber {
-    my ($node) = @_;
-    my $find = $node;
-    while ($find->tag and $find->tag ne 'form') {
-        $find = $find->parent;
-    }
-    if ($find) {
-        my @forms = $node->root->look_down('_tag' => 'form');
-        my $i = 1;
-        foreach my $form (@forms) {
-            return $i if ($find == $form);
-            $i++;
-        }
-    }
-    warn "Button not in a form";
-}
-
-# parent should use root if not set
-
-sub find_typenumber {
-    my ($node, $search, $parent) = @_;
-    my $find = $node;
-    while ($find->tag and $find->tag ne $parent) {
-        $find = $find->parent;
-    }
-    if ($find) {
-        my @found = $find->look_down(%$search);
-        my $i = 1;
-        foreach my $f (@found) {
-            return $i if ($f == $node);
-            $i++;
-        }
-    }
-    warn "not found";
-}
-
 
 1;
