@@ -245,6 +245,16 @@ sub assertTextPresent {
     return '$mech->text_contains('._esc_in_q($values->[1]).', '.$instr.');'."\n";
 }
 
+sub assertHtmlSource {
+    my ($self, $tc, $values, $instr) = @_;
+    my $locator = $self->locator_to_perl($values->[1]);
+    if ($locator) {
+        return 'ok('.$locator.','.$instr.');'."\n";
+    }
+    die $values->[1];
+    return '$tb->todo_skip('.$instr.');'."\n";
+}
+
 sub assertText {
     my ($self, $tc, $values, $instr) = @_;
     my $locator = $self->locator_to_perl($values->[1],1);
@@ -310,6 +320,9 @@ sub locator_to_perl {
             $self->wantxpath(1);
             return '$xpath->findnodes('._esc_in_q($locator).')->size';
         }
+        elsif ($locator =~ /^regex:(.*)/) {
+            return '$mech->content =~ /'._esc_in_regex($locator).'/';
+        }
         else {
             $self->wanttree(1);
             return '$tree->look_down("id" => '._esc_in_q($locator).')';
@@ -343,6 +356,22 @@ sub _esc_in_q {
     $str =~ s/\\/\\\\/g;
     $str =~ s/\'/\\\'/g;
     return "'".$str."'";
+}
+
+=head2 _esc_in_regexo
+
+=cut
+
+sub _esc_in_regex {
+    my ($str) = @_;
+    # print STDERR "str: $str\n\n";
+    $str =~ s/^regex\://;
+    $str =~ s/\//\\\//g;
+    $str = "\\Q$str\\E";
+    # $str =~ s/([^A-Za-z\s])/\\$1/g;
+    print STDERR "str: $str\n";
+    # $str =~ s/\s/\\s/g;
+    return $str;
 }
 
 
