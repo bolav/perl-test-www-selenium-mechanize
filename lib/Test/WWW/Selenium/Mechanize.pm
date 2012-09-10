@@ -259,12 +259,12 @@ sub assertHtmlSource {
 
 sub assertText {
     my ($self, $tc, $values, $instr) = @_;
-    my $locator = $self->locator_to_perl($values->[1],1);
+    my ($locator, $assert, $get_value) = $self->locator_to_perl($values->[1],1);
 
     $instr =~ s/^\s+//;
     $instr =~ s/\s+$//;
     if ($locator) {
-        return 'is(text_trim('.$locator.'), '._esc_in_q($values->[2]).', '.$instr.');'."\n";
+        return 'ok('. $locator . $assert . ', '._esc_in_q($values->[2]).');'."\n".'is(text_trim('.$locator . $get_value .'), '._esc_in_q($values->[2]).', '.$instr.') if (' . $locator . $assert . ');'."\n";
     }
         # TODO: Filter out HTML
         # html_strip($xpath->findnodes_as_string('._esc_in_q($values->[1]).'))
@@ -312,6 +312,15 @@ sub xpath_trim {
     return $locator;
 }
 
+=head2 locator_to_perl
+
+Rewrite a selenese locator to perl code to get html
+
+=cut
+
+# TODO: Refactor, to get value, and then know what kind of object you get.
+
+
 sub locator_to_perl {
     my ($self, $locator, $value) = @_;
     if (!$value) {
@@ -354,11 +363,11 @@ sub locator_to_perl {
         elsif ($locator =~ /^css=(.*)/) {
             my $xp = HTML::Selector::XPath::selector_to_xpath($1);
             $self->wantxpath(1);
-            return '$xpath->findnodes('._esc_in_q($xp).')->[0]->as_text';
+            return ('$xpath->findnodes('._esc_in_q($xp).')','->size', '->[0]->as_text');
         }
         elsif ($locator =~ m{^//}) {
             $self->wantxpath(1);
-            return '$xpath->findnodes('._esc_in_q($locator).')->[0]->as_text';
+            return ('$xpath->findnodes('._esc_in_q($locator).')','->size', '->[0]->as_text');
         }
     }
 }
@@ -387,7 +396,7 @@ sub _esc_in_regex {
     $str =~ s/\//\\\//g;
     $str = "\\Q$str\\E";
     # $str =~ s/([^A-Za-z\s])/\\$1/g;
-    print STDERR "str: $str\n";
+    # print STDERR "str: $str\n";
     # $str =~ s/\s/\\s/g;
     return $str;
 }
