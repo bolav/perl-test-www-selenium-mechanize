@@ -295,6 +295,12 @@ sub assertElementNotPresent {
     return 'ok(!'.$self->locator_to_perl($values->[1]).', '.$instr.');'."\n";
 }
 
+sub xpath_trim {
+    my ($self, $locator) = @_;
+    $locator =~ s/[\/\s]$//g;
+    return $locator;
+}
+
 sub locator_to_perl {
     my ($self, $locator, $value) = @_;
     if (!$value) {
@@ -318,7 +324,8 @@ sub locator_to_perl {
         }
         elsif ($locator =~ m{^//}) {
             $self->wantxpath(1);
-            return '$xpath->findnodes('._esc_in_q($locator).')->size';
+            my $xp = $self->xpath_trim($locator);
+            return '$xpath->findnodes('._esc_in_q($xp).')->size';
         }
         elsif ($locator =~ /^regex:(.*)/) {
             return '$mech->content =~ /'._esc_in_regex($locator).'/';
