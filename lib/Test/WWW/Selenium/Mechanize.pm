@@ -223,7 +223,7 @@ sub clickAndWait {
         $self->changed(1);
         return '{
   '.$node.'
-  if ($node->attr(\'type\') eq \'submit\') {
+  if ($node and $node->attr(\'type\') eq \'submit\') {
       $mech->form_number(find_formnumber($node));
       my $req = $mech->current_form->find_input( undef, \'submit\', find_typenumber($node, {type => \'submit\'}, \'form\') )->click($mech->current_form);
       $mech->request($req);
