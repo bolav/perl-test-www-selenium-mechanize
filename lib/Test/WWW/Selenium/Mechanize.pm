@@ -286,7 +286,7 @@ sub comment {
     else {
         $self->skiptest(0);
     }
-    return '$tb->diag('.$instr.');'."\n";
+    return '$tb->note('.$instr.');'."\n";
 }
 
 sub waitForTitle {
