@@ -161,7 +161,7 @@ sub convert_command {
 
 sub open {
     my ($self, $tc, $values, $instr) = @_;
-    my $url = $self->base_url || $ENV{BASEURL} || $tc->base_url;
+    my $url = $self->base_url || $ENV{BASEURL} || $tc->base_url || '';
     $url =~ s/\/$//;
     return '$mech->get_ok(\''.$url.$values->[1].'\', '.$instr.');'."\n";
 }
