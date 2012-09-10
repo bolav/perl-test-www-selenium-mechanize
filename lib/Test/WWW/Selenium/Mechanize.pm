@@ -220,6 +220,7 @@ sub clickAndWait {
 
     }
     if ($node) {
+        $self->changed(1);
         return '{
   '.$node.'
   if ($node->attr(\'type\') eq \'submit\') {
