@@ -28,7 +28,8 @@ my $tc = Parse::Selenese::TestCase->new(base_url => 'http://www.startsiden.no');
 
 {
     my $cmd = Parse::Selenese::Command->new(values => ['assertText', '//div', 'Arne']);
-    is($twsm->convert_command($cmd, $tc), 'is($xpath->findnodes(\'//div\')->[0]->as_text, \'Arne\', \'assertText //div Arne\');'."\n");
+    is($twsm->convert_command($cmd, $tc), 'ok($xpath->findnodes(\'//div\')->size, \'Arne\');
+is(text_trim($xpath->findnodes(\'//div\')->[0]->as_text), \'Arne\', \'assertText //div Arne\') if ($xpath->findnodes(\'//div\')->size);'."\n");
 }
 
 
