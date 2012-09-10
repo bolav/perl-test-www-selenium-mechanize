@@ -28,6 +28,8 @@ has 'wantxpath' => (is => 'rw', isa => 'Bool', default => 0);
 
 has 'skiptest'  => (is => 'rw', isa => 'Bool', default => 0);
 
+has 'base_url' => (is => 'ro', isa => 'Str');
+
 sub get_test {
     my ($self, $test) = @_;
     
@@ -159,7 +161,7 @@ sub convert_command {
 
 sub open {
     my ($self, $tc, $values, $instr) = @_;
-    my $url = $tc->base_url;
+    my $url = $self->base_url || $ENV{BASEURL} || $tc->base_url;
     $url =~ s/\/$//;
     return '$mech->get_ok(\''.$url.$values->[1].'\', '.$instr.');'."\n";
 }
@@ -259,12 +261,21 @@ sub assertText {
     my ($self, $tc, $values, $instr) = @_;
     my $locator = $self->locator_to_perl($values->[1],1);
 
+    $instr =~ s/^\s+//;
+    $instr =~ s/\s+$//;
     if ($locator) {
-        return 'is('.$locator.', '._esc_in_q($values->[2]).', '.$instr.');'."\n";
+        return 'is(text_trim('.$locator.'), '._esc_in_q($values->[2]).', '.$instr.');'."\n";
     }
         # TODO: Filter out HTML
         # html_strip($xpath->findnodes_as_string('._esc_in_q($values->[1]).'))
     return '$tb->todo_skip('.$instr.');'."\n";
+}
+
+sub assertXpathCount {
+    my ($self, $tc, $values, $instr) = @_;
+    my $xp = $self->xpath_trim($values->[1]);
+    return 'is($xpath->findnodes('._esc_in_q($xp).')->size, '._esc_in_q($values->[2]).', '.$instr.');'."\n";
+    die "$instr";
 }
 
 sub comment {

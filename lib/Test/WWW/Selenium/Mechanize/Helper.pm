@@ -2,7 +2,7 @@ package Test::WWW::Selenium::Mechanize::Helper;
 
 require Exporter;
 our @ISA = qw(Exporter);
-our @EXPORT = qw(find_formnumber find_typenumber);
+our @EXPORT = qw(find_formnumber find_typenumber text_trim);
 
 # If we need more like this, could be refactored into find_parent, and then
 # use find_typenumber
@@ -41,6 +41,13 @@ sub find_typenumber {
         }
     }
     warn "not found";
+}
+
+sub text_trim {
+    my ($text) = @_;
+    $text =~ s/^\s+//;
+    $text =~ s/\s+$//;
+    return $text;
 }
 
 1;
