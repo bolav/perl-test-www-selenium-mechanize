@@ -395,6 +395,7 @@ sub _esc_in_regex {
     # print STDERR "str: $str\n\n";
     $str =~ s/^regex\://;
     $str =~ s/\//\\\//g;
+    $str =~ s/\$/\\\$/g;
     $str = "\\Q$str\\E";
     # $str =~ s/([^A-Za-z\s])/\\$1/g;
     # print STDERR "str: $str\n";
