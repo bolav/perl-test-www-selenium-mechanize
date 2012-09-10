@@ -30,6 +30,8 @@ has 'skiptest'  => (is => 'rw', isa => 'Bool', default => 0);
 
 has 'base_url' => (is => 'ro', isa => 'Str');
 
+our %vars;
+
 sub get_test {
     my ($self, $test) = @_;
     
@@ -48,6 +50,7 @@ sub run {
     my $tree;
     my $xpath;
 
+    %vars = ();
     $test = $self->get_test($test);
 
     if (ref $test eq 'Parse::Selenese::TestCase') {
@@ -62,6 +65,9 @@ sub run {
                 $self->wantxpath(0);
             }
             if ($self->skiptest) {
+                $cmd = '$tb->diag("Skipping javascript test");'."\n";
+            }
+            if ($command->values->[2] =~ /\#\s*no_mech/) {
                 $cmd = '$tb->diag("Skipping javascript test");'."\n";
             }
 
@@ -88,6 +94,7 @@ sub as_perl {
     my ($self, $test) = @_;
     my $tree;
     my $xpath;
+    %vars = ();
     $test = $self->get_test($test);
     my $perl = <<'PERL';
 use Test::More;
@@ -118,6 +125,9 @@ PERL
             $self->wantxpath(0);
         }
         if ($self->skiptest) {
+            $cmd = '$tb->diag("Skipping javascript test");'."\n";
+        }
+        if ($command->values->[2] =~ /\#\s*no_mech/) {
             $cmd = '$tb->diag("Skipping javascript test");'."\n";
         }
         $perl .= $cmd;
@@ -166,21 +176,36 @@ sub open {
     return '$mech->get_ok(\''.$url.$values->[1].'\', '.$instr.');'."\n";
 }
 
+=head2 store
+
+store a value
+
+=cut
+
+#TODO: Should be runtime for perl
+
+sub store {
+    my ($self, $tc, $values, $instr) = @_;
+    $vars{$values->[2]} = $values->[1];
+    return '';
+}
+
 sub type {
     my ($self, $tc, $values, $instr) = @_;
+    my $value = $self->value_to_perl($values->[2]);
     if ($values->[1] =~ /^id=(.*)/) {
         my $val = $1;
         $self->wanttree(1);
         return '{
   my $node = ($tree->look_down("id" => '._esc_in_q($val).'))[0];
   $mech->form_number(find_formnumber($node));
-  $mech->field($node->attr("name"), '._esc_in_q($values->[2]).');
+  $mech->field($node->attr("name"), '._esc_in_q($value).');
 }
 ';
     }
     else {
         # XXX: Should maybe find the first input with name=
-        return '$mech->field('._esc_in_q($values->[1]).', '._esc_in_q($values->[2]).');'."\n";
+        return '$mech->field('._esc_in_q($values->[1]).', '._esc_in_q($value).');'."\n";
     }
 }
 
@@ -313,6 +338,12 @@ sub xpath_trim {
     return $locator;
 }
 
+sub value_to_perl {
+    my ($self, $value) = @_;
+    $value =~ s/\$\{([^\}]+)\}/$vars{$1}/eg;
+    return $value;
+}
+
 =head2 locator_to_perl
 
 Rewrite a selenese locator to perl code to get html
@@ -386,7 +417,7 @@ sub _esc_in_q {
     return "'".$str."'";
 }
 
-=head2 _esc_in_regexo
+=head2 _esc_in_regex
 
 =cut
 
@@ -394,6 +425,7 @@ sub _esc_in_regex {
     my ($str) = @_;
     # print STDERR "str: $str\n\n";
     $str =~ s/^regex\://;
+    $str =~ s/\$\{([^\}]+)\}/$vars{$1}/eg;
     $str =~ s/\//\\\//g;
     $str =~ s/\$/\\\$/g;
     $str = "\\Q$str\\E";
