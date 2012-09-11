@@ -75,7 +75,6 @@ sub run {
 
             eval $cmd;
             if ($@) {
-                warn "EXCEPTION: $@";
                 if ($@->isa("Test::Builder::Exception")) {
                     $self->connection_problems(1);
                     die $@;
