@@ -30,6 +30,8 @@ has 'skiptest'  => (is => 'rw', isa => 'Bool', default => 0);
 
 has 'base_url' => (is => 'ro', isa => 'Str');
 
+has 'connection_problems' => (is => 'rw', isa => 'Bool', default => 0);
+
 our %vars;
 
 sub get_test {
@@ -73,7 +75,12 @@ sub run {
 
             eval $cmd;
             if ($@) {
-                die $@ if $@->isa("Test::Builder::Exception");
+                warn "EXCEPTION: $@";
+                if ($@->isa("Test::Builder::Exception")) {
+                    $self->connection_problems(1);
+                    die $@;
+                }
+
                 die $@.' '.join(' ', @{$command->values})."\n".$cmd;
             }
             if ($self->changed) {
@@ -174,7 +181,7 @@ sub open {
     my ($self, $tc, $values, $instr) = @_;
     my $url = $self->base_url || $ENV{BASEURL} || $tc->base_url || '';
     $url =~ s/\/$//;
-    return '$mech->get_ok(\''.$url.$values->[1].'\', '.$instr.') or Test::More::plan skip_all => "Unable to connect to '. $url.$values->[1] .'" and exit(1);'."\n";
+    return '$mech->get_ok(\''.$url.$values->[1].'\', '.$instr.') or Test::More::plan skip_all => "Unable to connect to '. $url.$values->[1] .'";'."\n";
 }
 
 =head2 store

@@ -9,7 +9,7 @@ my $twsm = Test::WWW::Selenium::Mechanize->new;
 my $tc = Parse::Selenese::TestCase->new(base_url => 'http://www.startsiden.no');
 {
     my $cmd = Parse::Selenese::Command->new(values => ['open', '/']);
-    is($twsm->convert_command($cmd, $tc), '$mech->get_ok(\'http://www.startsiden.no/\', \'open /\') or Test::More::plan skip_all => "Unable to connect to http://www.startsiden.no/" and exit(1);'."\n");
+    is($twsm->convert_command($cmd, $tc), '$mech->get_ok(\'http://www.startsiden.no/\', \'open /\') or Test::More::plan skip_all => "Unable to connect to http://www.startsiden.no/";'."\n");
 }
 {
     my $cmd = Parse::Selenese::Command->new(values => ['unknown_cmd', '/']);
