@@ -12,9 +12,12 @@ requires 'HTML::Strip';
 requires 'HTML::TreeBuilder';
 requires 'HTML::TreeBuilder::XPath';
 requires 'HTML::Selector::XPath';
+requires 'Data::Dump';
 
 test_requires 'HTTP::Server::Simple::CGI';
 test_requires 'Test::MockModule';
+test_requires 'ok';
+
 
 install_script glob('script/*');
 WriteAll;
