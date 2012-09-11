@@ -34,9 +34,9 @@ our %vars;
 
 sub get_test {
     my ($self, $test) = @_;
-    
+
     if (ref $test) {
-        
+
     } else {
         $test = Parse::Selenese::parse($test);
     }
@@ -73,6 +73,7 @@ sub run {
 
             eval $cmd;
             if ($@) {
+                die $@ if $@->isa("Test::Builder::Exception");
                 die $@.' '.join(' ', @{$command->values})."\n".$cmd;
             }
             if ($self->changed) {
@@ -159,7 +160,7 @@ sub convert_command {
     my $instr = join ' ',@{$command->values};
     $instr =~ s/\'//g;
     $instr = "'".$instr."'";
-    
+
     if (my $coderef = $self->can($cmd)) {
         $cmdstr = &{$coderef}($self, $tc, $command->values, $instr);
     }
@@ -173,7 +174,7 @@ sub open {
     my ($self, $tc, $values, $instr) = @_;
     my $url = $self->base_url || $ENV{BASEURL} || $tc->base_url || '';
     $url =~ s/\/$//;
-    return '$mech->get_ok(\''.$url.$values->[1].'\', '.$instr.');'."\n";
+    return '$mech->get_ok(\''.$url.$values->[1].'\', '.$instr.') or Test::More::plan skip_all => "Unable to connect to '. $url.$values->[1] .'" and exit(1);'."\n";
 }
 
 =head2 store
@@ -213,7 +214,7 @@ sub type {
 
 sub clickAndWait {
     my ($self, $tc, $values, $instr) = @_;
-    
+
     my $node;
     if ($values->[1] =~ /^link=(.*)/) {
         $self->changed(1);
@@ -259,10 +260,10 @@ sub clickAndWait {
   }
 }
 ';
-        
+
     }
     else {
-        return '$tb->todo_skip('.$instr.');'."\n";        
+        return '$tb->todo_skip('.$instr.');'."\n";
     }
 }
 
@@ -390,7 +391,7 @@ sub locator_to_perl {
     else {
         # Want to compare against a value
         if (0) {
-            
+
         }
         elsif ($locator =~ /^css=(.*)/) {
             my $xp = HTML::Selector::XPath::selector_to_xpath($1);
