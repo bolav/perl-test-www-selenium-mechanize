@@ -69,8 +69,8 @@ sub run {
             if ($self->skiptest) {
                 $cmd = '$tb->diag("Skipping javascript test");'."\n";
             }
-            if ($command->values->[2] =~ /\#\s*no_mech/) {
-                $cmd = '$tb->diag("Skipping javascript test");'."\n";
+            if ($command->values->[2] =~ /\#\s*no_?mech/) {
+                $cmd = '$tb->diag("Skipping no_mech tagged test test");'."\n";
             }
 
             eval $cmd;
