@@ -67,10 +67,11 @@ sub run {
                 $self->wantxpath(0);
             }
             if ($self->skiptest) {
-                $cmd = '$tb->diag("Skipping javascript test");'."\n";
+                $cmd = '$tb->diag("Skipping javascript test: ' . join(" ", @{$command->values}) . '");'."\n";
             }
             if ($command->values->[2] =~ /\#\s*no_?mech/) {
-                $cmd = '$tb->diag("Skipping no_mech tagged test test");'."\n";
+                $cmd = '$tb->skip("Skipping #no_mech tagged test: '
+                . join(" ", @{$command->values}) . '");'."\n";
             }
 
             eval $cmd;
