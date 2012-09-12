@@ -171,7 +171,7 @@ sub convert_command {
         $cmdstr = &{$coderef}($self, $tc, $command->values, $instr);
     }
     else {
-        $cmdstr = '$tb->todo_skip('.$instr.');'."\n";
+        $cmdstr = '$tb->skip("Command '. $cmd . ' not supported: " . '.$instr.');'."\n";
     }
     return $cmdstr;
 }

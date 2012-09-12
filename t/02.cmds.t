@@ -13,7 +13,7 @@ my $tc = Parse::Selenese::TestCase->new(base_url => 'http://www.startsiden.no');
 }
 {
     my $cmd = Parse::Selenese::Command->new(values => ['unknown_cmd', '/']);
-    is($twsm->convert_command($cmd, $tc), '$tb->todo_skip(\'unknown_cmd /\');'."\n");
+    is($twsm->convert_command($cmd, $tc), '$tb->skip("Command unknown_cmd not supported: " . \'unknown_cmd /\');'."\n");
 }
 
 {
