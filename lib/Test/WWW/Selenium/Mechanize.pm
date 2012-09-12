@@ -4,6 +4,7 @@ use Moose;
 use Parse::Selenese;
 use Test::More;
 use Test::WWW::Mechanize;
+use Encode qw();
 use utf8;
 
 use HTML::Strip;
@@ -171,7 +172,7 @@ sub convert_command {
         $cmdstr = &{$coderef}($self, $tc, $command->values, $instr);
     }
     else {
-        $cmdstr = '$tb->skip("Command '. $cmd . ' not supported: " . '.$instr.');'."\n";
+        $cmdstr = '$tb->skip("Command '. _esc_in_output($cmd) . ' not supported: " . '._esc_in_output($instr).');'."\n";
     }
     return $cmdstr;
 }
@@ -180,7 +181,7 @@ sub open {
     my ($self, $tc, $values, $instr) = @_;
     my $url = $self->base_url || $ENV{BASEURL} || $tc->base_url || '';
     $url =~ s/\/$//;
-    return '$mech->get_ok(\''.$url.$values->[1].'\', '.$instr.') or Test::More::plan skip_all => "Unable to connect to '. $url.$values->[1] .'";'."\n";
+    return '$mech->get_ok(\''.$url.$values->[1].'\', '._esc_in_output($instr).') or Test::More::plan skip_all => "Unable to connect to '. $url.$values->[1] .'";'."\n";
 }
 
 =head2 store
@@ -224,7 +225,7 @@ sub clickAndWait {
     my $node;
     if ($values->[1] =~ /^link=(.*)/) {
         $self->changed(1);
-        return '$mech->follow_link_ok({ text => '._esc_in_q($1).'}, '.$instr.');'."\n";
+        return '$mech->follow_link_ok({ text => '._esc_in_q($1).'}, '._esc_in_output($instr).');'."\n";
     }
     elsif ($values->[1] =~ /^id=(.*)/) {
         my $val = $1;
@@ -245,7 +246,7 @@ sub clickAndWait {
       $mech->get_ok($node->attr(\'href\'));
   }
   else {
-      $tb->todo_skip('.$instr.');
+      $tb->todo_skip('._esc_in_output($instr).');
   }
 }
 ';
@@ -259,17 +260,17 @@ sub clickAndWait {
       $mech->form_number(find_formnumber($node));
       my $req = $mech->current_form->find_input( undef, \'submit\', find_typenumber($node, {type => \'submit\'}, \'form\') )->click($mech->current_form);
       $mech->request($req);
-      ok($mech->success, '.$instr.');
+      ok($mech->success, '._esc_in_output($instr).');
   }
   else {
-      $tb->todo_skip('.$instr.');
+      $tb->todo_skip('._esc_in_output($instr).');
   }
 }
 ';
 
     }
     else {
-        return '$tb->todo_skip('.$instr.');'."\n";
+        return '$tb->todo_skip('._esc_in_output($instr).');'."\n";
     }
 }
 
@@ -277,7 +278,7 @@ sub clickAndWait {
 
 sub assertTextPresent {
     my ($self, $tc, $values, $instr) = @_;
-    return '$mech->text_contains('._esc_in_q($values->[1]).', '.$instr.');'."\n";
+    return '$mech->text_contains('._esc_in_q($values->[1]).', '._esc_in_output($instr).');'."\n";
 }
 
 sub assertHtmlSource {
@@ -287,7 +288,7 @@ sub assertHtmlSource {
         return 'ok('.$locator.','.$instr.');'."\n";
     }
     die $values->[1];
-    return '$tb->todo_skip('.$instr.');'."\n";
+    return '$tb->todo_skip('._esc_in_output($instr).');'."\n";
 }
 
 sub assertText {
@@ -297,7 +298,7 @@ sub assertText {
     $instr =~ s/^\s+//;
     $instr =~ s/\s+$//;
     if ($locator) {
-        return 'ok('. $locator . $assert . ', '._esc_in_q($values->[2]).');'."\n".'is(text_trim('.$locator . $get_value .'), '._esc_in_q($values->[2]).', '.$instr.') if (' . $locator . $assert . ');'."\n";
+        return 'ok('. $locator . $assert . ', '._esc_in_output($values->[2]).');'."\n".'is(text_trim('.$locator . $get_value .'), '._esc_in_q($values->[2]).', '._esc_in_output($instr).') if (' . $locator . $assert . ');'."\n";
     }
         # TODO: Filter out HTML
         # html_strip($xpath->findnodes_as_string('._esc_in_q($values->[1]).'))
@@ -307,7 +308,7 @@ sub assertText {
 sub assertXpathCount {
     my ($self, $tc, $values, $instr) = @_;
     my $xp = $self->xpath_trim($values->[1]);
-    return 'is($xpath->findnodes('._esc_in_q($xp).')->size, '._esc_in_q($values->[2]).', '.$instr.');'."\n";
+    return 'is($xpath->findnodes('._esc_in_q($xp).')->size, '._esc_in_q($values->[2]).', '._esc_in_output($instr).');'."\n";
     die "$instr";
 }
 
@@ -324,19 +325,19 @@ sub comment {
 
 sub waitForTitle {
     my ($self, $tc, $values, $instr) = @_;
-    return '$mech->title_is('._esc_in_q($values->[1]).', '.$instr.');'."\n";
+    return '$mech->title_is('._esc_in_q($values->[1]).', '._esc_in_output($instr).');'."\n";
 }
 
 *verifyElementPresent = \&assertElementPresent;
 
 sub assertElementPresent {
     my ($self, $tc, $values, $instr) = @_;
-    return 'ok('.$self->locator_to_perl($values->[1]).', '.$instr.');'."\n";
+    return 'ok('.$self->locator_to_perl($values->[1]).', '._esc_in_output($instr).');'."\n";
 }
 
 sub assertElementNotPresent {
     my ($self, $tc, $values, $instr) = @_;
-    return 'ok(!'.$self->locator_to_perl($values->[1]).', '.$instr.');'."\n";
+    return 'ok(!'.$self->locator_to_perl($values->[1]).', '._esc_in_output($instr).');'."\n";
 }
 
 sub xpath_trim {
@@ -441,7 +442,12 @@ sub _esc_in_regex {
     # $str =~ s/\s/\\s/g;
     return $str;
 }
-
+sub _esc_in_output {
+    my ($str) = @_;
+    $str = _esc_in_q($str) unless ($str =~ m/^['"].*?['"]$/);
+    $str = Encode::encode_utf8($str);
+    return $str;
+}
 
 # TODO: Move this to Mechanize::Helper, and export by default
 # Needs to be done for perl-conversion to work
