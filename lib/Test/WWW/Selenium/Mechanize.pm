@@ -386,7 +386,7 @@ sub locator_to_perl {
             return '$xpath->findnodes('._esc_in_q($xp).')->size';
         }
         elsif ($locator =~ /^regex:(.*)/) {
-            return '$mech->content =~ /'._esc_in_regex($locator).'/';
+            return '$mech->content_like(qr/'._esc_in_regex($locator).'/s)';
         }
         else {
             $self->wanttree(1);
@@ -434,6 +434,8 @@ sub _esc_in_regex {
     $str =~ s/\$\{([^\}]+)\}/$vars{$1}/eg;
     $str =~ s/\//\\\//g;
     $str =~ s/\$/\\\$/g;
+    # NBSP to \s+?
+    $str =~ s/\xa0+/\\E\\s+\\Q/g;
     $str = "\\Q$str\\E";
     # $str =~ s/([^A-Za-z\s])/\\$1/g;
     # print STDERR "str: $str\n";
