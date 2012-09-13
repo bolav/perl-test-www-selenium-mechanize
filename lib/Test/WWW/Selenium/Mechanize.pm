@@ -85,8 +85,6 @@ sub run {
             }
             if ($self->changed) {
                 $self->changed(0);
-                $self->wanttree(0);
-                $self->wantxpath(0);
                 $tree && $tree->delete;
                 $tree = undef;
                 $xpath && $xpath->delete;
@@ -141,8 +139,6 @@ PERL
         $perl .= $cmd;
         if ($self->changed) {
             $self->changed(0);
-            $self->wanttree(0);
-            $self->wantxpath(0);
             $tree = 0;
             $xpath = 0;
             $perl .= <<'PERL';
@@ -180,6 +176,7 @@ sub convert_command {
 sub open {
     my ($self, $tc, $values, $instr) = @_;
     my $url = $self->base_url || $ENV{BASEURL} || $tc->base_url || '';
+    $self->changed(1);
     $url =~ s/\/$//;
     return '$mech->get_ok(\''.$url.$values->[1].'\', '._esc_in_output($instr).') or Test::More::plan skip_all => "Unable to connect to '. $url.$values->[1] .'";'."\n";
 }
