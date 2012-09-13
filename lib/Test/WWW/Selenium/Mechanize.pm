@@ -304,6 +304,7 @@ sub assertText {
 
 sub assertXpathCount {
     my ($self, $tc, $values, $instr) = @_;
+    $self->wantxpath(1);
     my $xp = $self->xpath_trim($values->[1]);
     return 'is($xpath->findnodes('._esc_in_q($xp).')->size, '._esc_in_q($values->[2]).', '._esc_in_output($instr).');'."\n";
     die "$instr";
