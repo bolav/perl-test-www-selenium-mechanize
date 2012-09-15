@@ -68,7 +68,7 @@ sub run {
                 $self->wantxpath(0);
             }
             if ($self->skiptest) {
-                $cmd = '$tb->diag("Skipping javascript test");'."\n";
+                $cmd = '$tb->note("Skipping javascript test");'."\n";
             }
             if ($command->values->[2] =~ /\#\s*no_?mech/) {
                 $cmd = '$tb->skip("Skipping #no_mech tagged test");'."\n";
@@ -275,7 +275,8 @@ sub clickAndWait {
 
 sub assertTextPresent {
     my ($self, $tc, $values, $instr) = @_;
-    return '$mech->text_contains('._esc_in_q($values->[1]).', '._esc_in_output($instr).');'."\n";
+    return '$mech->text_contains('._esc_in_q($values->[1])
+    .', '._esc_in_output($instr).');'."\n";
 }
 
 sub assertHtmlSource {
@@ -295,7 +296,9 @@ sub assertText {
     $instr =~ s/^\s+//;
     $instr =~ s/\s+$//;
     if ($locator) {
-        return 'ok('. $locator . $assert . ', '._esc_in_output($values->[2]).');'."\n".'is(text_trim('.$locator . $get_value .'), '._esc_in_q($values->[2]).', '._esc_in_output($instr).') if (' . $locator . $assert . ');'."\n";
+        return 'ok('. $locator . $assert . ', '._esc_in_output($values->[2]).');'."\n"
+        .'is(text_trim('.$locator . $get_value .'), '._esc_in_q($values->[2])
+        .', '._esc_in_output($instr).') if (' . $locator . $assert . ');'."\n";
     }
         # TODO: Filter out HTML
         # html_strip($xpath->findnodes_as_string('._esc_in_q($values->[1]).'))
@@ -306,7 +309,8 @@ sub assertXpathCount {
     my ($self, $tc, $values, $instr) = @_;
     $self->wantxpath(1);
     my $xp = $self->xpath_trim($values->[1]);
-    return 'is($xpath->findnodes('._esc_in_q($xp).')->size, '._esc_in_q($values->[2]).', '._esc_in_output($instr).');'."\n";
+    return 'is($xpath->findnodes('._esc_in_q($xp).')->size, '._esc_in_q($values->[2])
+    .', '._esc_in_output($instr).');'."\n";
     die "$instr";
 }
 
